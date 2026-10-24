@@ -13,7 +13,8 @@ EFFECTS = {
 }
 
 
-MACRO_BASE, MACRO_END = 400, 574      # macro bodies live in bytes 400..573 of the 576-byte area
+MIN_DELAY_MS = 10
+MACRO_BASE, MACRO_END = 400, 574     # macro bodies live in bytes 400..573 of the 576-byte area
 _LETTERS = {c: 0x04 + i for i, c in enumerate("abcdefghijklmnopqrstuvwxyz")}
 _DIGITS = {c: 0x1E + i for i, c in enumerate("1234567890")}
 _PUNCT = {" ": 0x2C, "-": 0x2D, "=": 0x2E, "[": 0x2F, "]": 0x30, "\\": 0x31, ";": 0x33, "'": 0x34,
@@ -60,10 +61,13 @@ def text_to_events(text):
 def macro_body(events, delay_ms=0):
     """Header [n_items, 0*9]; items are events [usage, 0xB0 down / 0x30 up] and delays [lo, hi, 0, 0x50, 0, 0]
     placed between events."""
+    # The firmware expects events and delays to alternate; without a delay item the next event is misread
+    # (a key stays held and repeats), so there is always one, at least MIN_DELAY_MS.
+    delay_ms = max(delay_ms, MIN_DELAY_MS)
     items = bytearray()
     n = 0
     for k, (usage, pressed) in enumerate(events):
-        if k and delay_ms:
+        if k:
             items += bytes((delay_ms & 0xFF, delay_ms >> 8, 0, 0x50, 0, 0))
             n += 1
         items += bytes((usage, 0xB0 if pressed else 0x30))

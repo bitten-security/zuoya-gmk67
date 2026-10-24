@@ -12,7 +12,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox,
 
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
-from .protocol import EFFECTS, MACRO_END, MACRO_BASE, Keyboard, build_macro_area, text_to_events
+from .protocol import (EFFECTS, MACRO_BASE, MACRO_END, MIN_DELAY_MS, Keyboard, build_macro_area,
+                       text_to_events)
 from .theme import PALETTE, QSS
 
 STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
@@ -250,8 +251,8 @@ class Main(QMainWindow):
         self.mName = QLineEdit()
         self.mText = QPlainTextEdit()
         self.mDelay = QSpinBox()
-        self.mDelay.setRange(0, 5000)
-        self.mDelay.setValue(0)
+        self.mDelay.setRange(MIN_DELAY_MS, 5000)
+        self.mDelay.setValue(MIN_DELAY_MS)
         self.lMKey = QLabel()
         self.mKey = QComboBox()
         self.mKey.addItem("-", None)
