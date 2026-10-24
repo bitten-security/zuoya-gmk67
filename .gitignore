@@ -6,3 +6,5 @@ tools/sniff.out
 tools/sniff.err
 tools/full.txt
 tools/probe2.out
+dist/
+build_tmp/
