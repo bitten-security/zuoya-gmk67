@@ -11,10 +11,14 @@ LAYOUT = json.loads((Path(__file__).parent / "layout.json").read_text(encoding="
 class KeyboardWidget(QWidget):
     """Virtual keyboard: click / ctrl+click / drag to select keys, each key shows its assigned color."""
     selectionChanged = Signal()
+    knobClicked = Signal()
+
+    KNOB = {"x": 730, "y": 30, "w": 44, "h": 44}      # rotary knob, top right (not part of the LED matrix)
 
     def __init__(self):
         super().__init__()
         self.keys = LAYOUT["keys"]
+        self.knob_selected = False
         self.colors = {}          # light index -> (r, g, b)
         self.selected = set()
         self.setMinimumSize(560, 215)
@@ -43,6 +47,11 @@ class KeyboardWidget(QWidget):
 
     def mousePressEvent(self, e):
         if e.button() != Qt.LeftButton:
+            return
+        if self._rect(self.KNOB).contains(e.position()):
+            self.knob_selected = not self.knob_selected
+            self.update()
+            self.knobClicked.emit()
             return
         ctrl = bool(e.modifiers() & Qt.ControlModifier)
         self._base = set(self.selected) if ctrl else set()
@@ -76,6 +85,18 @@ class KeyboardWidget(QWidget):
         self._drag_rect = None
         self.update()
 
+    def _paint_knob(self, p):
+        r = self._rect(self.KNOB)
+        c = r.center()
+        rad = min(r.width(), r.height()) / 2
+        p.setPen(QPen(QColor("#ffffff") if self.knob_selected else QColor("#4a5266"), 2.5 if self.knob_selected else 1.5))
+        p.setBrush(QColor("#0c0e13"))
+        p.drawEllipse(c, rad, rad)
+        p.setPen(QPen(QColor("#2f3647"), 1))
+        p.drawEllipse(c, rad * 0.62, rad * 0.62)
+        p.setPen(QPen(QColor("#5b8cff"), 3, Qt.SolidLine, Qt.RoundCap))      # indicator notch
+        p.drawLine(QPointF(c.x(), c.y() - rad * 0.28), QPointF(c.x(), c.y() - rad * 0.78))
+
     def paintEvent(self, _):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
@@ -95,6 +116,7 @@ class KeyboardWidget(QWidget):
             p.drawRoundedRect(r, 6, 6)
             p.setPen(QColor("black") if fill.lightness() > 140 else QColor("#c9d1e0"))
             p.drawText(r, Qt.AlignCenter, k["label"].upper() if len(k["label"]) < 3 else k["label"])
+        self._paint_knob(p)
         if self._drag_rect:
             p.setPen(QPen(QColor("#6aa9ff"), 1, Qt.DashLine))
             p.setBrush(QColor(106, 169, 255, 40))
