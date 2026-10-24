@@ -6,12 +6,13 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox, QFrame, QGridLayout,
-                               QHBoxLayout, QInputDialog, QLabel, QListWidget, QMainWindow, QPushButton,
-                               QSlider, QTabWidget, QVBoxLayout, QWidget)
+                               QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QMainWindow,
+                               QPlainTextEdit, QProgressBar, QPushButton, QSlider, QSpinBox, QTabWidget,
+                               QVBoxLayout, QWidget)
 
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
-from .protocol import EFFECTS, Keyboard
+from .protocol import EFFECTS, MACRO_END, MACRO_BASE, Keyboard, build_macro_area, text_to_events
 from .theme import PALETTE, QSS
 
 STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
@@ -30,6 +31,7 @@ def load_cfg():
     cfg.setdefault("fx", dict(DEFAULT_FX))
     cfg.setdefault("keys", {})
     cfg.setdefault("tab", 0)
+    cfg.setdefault("macros", [])
     return cfg
 
 
@@ -107,6 +109,7 @@ class Main(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.addTab(self.build_fx_tab(), "")
         self.tabs.addTab(self.build_keys_tab(), "")
+        self.tabs.addTab(self.build_macros_tab(), "")
         self.tabs.currentChanged.connect(self.tab_changed)
         body.addWidget(self.tabs, 1)
         body.addWidget(self.build_profiles(), 0)
@@ -220,6 +223,123 @@ class Main(QMainWindow):
         lay.addWidget(c, 1)
         return page
 
+    def build_macros_tab(self):
+        page = QWidget()
+        lay = QHBoxLayout(page)
+        lay.setContentsMargins(0, 12, 0, 0)
+        left = card()
+        lv = QVBoxLayout(left)
+        self.mlist = QListWidget()
+        self.mlist.currentRowChanged.connect(self.macro_selected)
+        self.bMNew, self.bMDel = QPushButton(), QPushButton()
+        self.bMDel.setObjectName("danger")
+        self.bMNew.clicked.connect(self.macro_new)
+        self.bMDel.clicked.connect(self.macro_delete)
+        lv.addWidget(self.mlist, 1)
+        lv.addWidget(self.bMNew)
+        lv.addWidget(self.bMDel)
+        left.setFixedWidth(200)
+        right = card()
+        rv = QVBoxLayout(right)
+        rv.setContentsMargins(16, 14, 16, 14)
+        self.mHint = QLabel()
+        self.mHint.setObjectName("subtitle")
+        self.mHint.setWordWrap(True)
+        rv.addWidget(self.mHint)
+        self.lMName, self.lMText, self.lMDelay, self.lMSpace = (QLabel() for _ in range(4))
+        self.mName = QLineEdit()
+        self.mText = QPlainTextEdit()
+        self.mDelay = QSpinBox()
+        self.mDelay.setRange(0, 5000)
+        self.mDelay.setValue(0)
+        self.mBar = QProgressBar()
+        self.mBar.setRange(0, MACRO_END - MACRO_BASE)
+        self.mBar.setTextVisible(True)
+        self.bMSave, self.bMSend = QPushButton(), QPushButton()
+        self.bMSend.setObjectName("primary")
+        self.bMSave.clicked.connect(self.macro_save)
+        self.bMSend.clicked.connect(self.macro_send)
+        self.mText.textChanged.connect(self.macro_space)
+        self.mDelay.valueChanged.connect(self.macro_space)
+        for w in (self.lMName, self.mName, self.lMText, self.mText, self.lMDelay, self.mDelay, self.lMSpace,
+                  self.mBar):
+            rv.addWidget(w)
+        row = QHBoxLayout()
+        row.addStretch()
+        row.addWidget(self.bMSave)
+        row.addWidget(self.bMSend)
+        rv.addLayout(row)
+        lay.addWidget(left)
+        lay.addWidget(right, 1)
+        self.refresh_macros()
+        return page
+
+    def refresh_macros(self, select=None):
+        self.mlist.blockSignals(True)
+        self.mlist.clear()
+        self.mlist.addItems([f"{i + 1}. {m['name']}" for i, m in enumerate(self.cfg["macros"])])
+        self.mlist.blockSignals(False)
+        if self.cfg["macros"]:
+            self.mlist.setCurrentRow(min(select if select is not None else 0, len(self.cfg["macros"]) - 1))
+        else:
+            self.macro_selected(-1)
+
+    def macro_selected(self, row):
+        m = self.cfg["macros"][row] if 0 <= row < len(self.cfg["macros"]) else {"name": "", "text": "", "delay": 0}
+        self.mName.setText(m["name"])
+        self.mText.setPlainText(m["text"])
+        self.mDelay.setValue(m["delay"])
+        self.macro_space()
+
+    def macro_list(self, current=None):
+        """Macros as stored, with the row being edited replaced by the editor contents."""
+        ms = [dict(m) for m in self.cfg["macros"]]
+        row = self.mlist.currentRow()
+        cur = {"name": self.mName.text() or "macro", "text": self.mText.toPlainText(), "delay": self.mDelay.value()}
+        if 0 <= row < len(ms):
+            ms[row] = cur
+        else:
+            ms.append(cur)
+        return ms
+
+    def macro_space(self):
+        try:
+            _, used = build_macro_area([(text_to_events(m["text"]), m["delay"]) for m in self.macro_list()])
+            self.mBar.setValue(used)
+            self.mBar.setFormat(f"{used} / {MACRO_END - MACRO_BASE} bytes")
+            return True
+        except ValueError:
+            self.mBar.setValue(self.mBar.maximum())
+            self.mBar.setFormat(self.t("m_full"))
+            return False
+
+    def macro_new(self):
+        self.cfg["macros"].append({"name": f"macro{len(self.cfg['macros']) + 1}", "text": "", "delay": 0})
+        self.save_cfg()
+        self.refresh_macros(len(self.cfg["macros"]) - 1)
+
+    def macro_save(self):
+        row = self.mlist.currentRow()
+        ms = self.macro_list()
+        self.cfg["macros"] = ms
+        self.save_cfg()
+        self.refresh_macros(row if row >= 0 else len(ms) - 1)
+
+    def macro_delete(self):
+        row = self.mlist.currentRow()
+        if 0 <= row < len(self.cfg["macros"]):
+            self.cfg["macros"].pop(row)
+            self.save_cfg()
+            self.refresh_macros(row)
+
+    def macro_send(self):
+        self.macro_save()
+        if not self.macro_space():
+            self.say(self.t("m_full"))
+            return
+        macros = [(text_to_events(m["text"]), m["delay"]) for m in self.cfg["macros"]]
+        self.send(lambda: self.kb.write_macros(macros))
+
     def build_profiles(self):
         c = card()
         c.setFixedWidth(230)
@@ -247,6 +367,11 @@ class Main(QMainWindow):
         self.subtitle.setText(self.t("subtitle"))
         self.tabs.setTabText(0, self.t("tab_fx"))
         self.tabs.setTabText(1, self.t("tab_keys"))
+        self.tabs.setTabText(2, self.t("tab_macros"))
+        for w, k in ((self.mHint, "m_hint"), (self.lMName, "m_name"), (self.lMText, "m_text"),
+                     (self.lMDelay, "m_delay"), (self.lMSpace, "m_space"), (self.bMSave, "m_save"),
+                     (self.bMSend, "m_send"), (self.bMNew, "m_new"), (self.bMDel, "delete")):
+            w.setText(self.t(k))
         for w, k in ((self.lEffect, "effect"), (self.lBright, "brightness"), (self.lSpeed, "speed"),
                      (self.lDir, "direction"), (self.lColor, "color"), (self.random, "random"),
                      (self.live, "live"), (self.applyBtn, "apply"), (self.hint, "hint"),
