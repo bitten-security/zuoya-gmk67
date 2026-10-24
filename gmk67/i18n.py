@@ -14,7 +14,8 @@ TEXT = {
            "m_delay": "Atraso entre teclas (ms)", "m_key": "Tecla que dispara a macro", "m_save": "Salvar macro", "m_send": "Gravar no teclado",
            "m_space": "Espaço usado", "m_full": "Macros não cabem na memória do teclado",
            "m_hint": "Digite o texto; use {ENTER}, {TAB}, {ESC}, {CTRL}... para teclas especiais. "
-                     "A memória do teclado é pequena (cerca de 174 bytes)."},
+                     "A memória do teclado é pequena (174 bytes): cada tecla ocupa 4 bytes mais 6 de atraso, "
+                     "então cabem poucos caracteres."},
     "en": {"title": "Zuoya GMK67", "subtitle": "RGB lighting control",
            "tab_fx": "Effects", "tab_keys": "Per key", "effect": "Effect", "brightness": "Brightness",
            "speed": "Speed", "random": "Random color / rainbow", "direction": "Direction",
@@ -30,5 +31,6 @@ TEXT = {
            "m_delay": "Delay between keys (ms)", "m_key": "Key that triggers the macro", "m_save": "Save macro", "m_send": "Write to keyboard",
            "m_space": "Space used", "m_full": "Macros do not fit in the keyboard memory",
            "m_hint": "Type the text; use {ENTER}, {TAB}, {ESC}, {CTRL}... for special keys. "
-                     "Keyboard memory is small (about 174 bytes)."},
+                     "Keyboard memory is small (174 bytes): each key takes 4 bytes plus 6 for a delay, "
+                     "so only a few characters fit."},
 }
