@@ -12,9 +12,10 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox,
 
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
-from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS, Keyboard,
+from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS, PID, VID, Keyboard,
                        build_macro_area, entry_key, entry_macro, entry_media, text_to_events)
 from .theme import PALETTE, QSS
+from .usbrate import polling_rates
 
 STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
 STORE.mkdir(parents=True, exist_ok=True)
@@ -494,8 +495,15 @@ class Main(QMainWindow):
     # ---------------------------------------------------------------- status
     def refresh_status(self):
         c = Keyboard.connections()
+        if c != getattr(self, "_conn", None):        # polling rates only change when the links change
+            self._conn = c
+            try:
+                self.rates = {r["kind"]: r["hz"] for r in polling_rates(VID, PID)}
+            except Exception:
+                self.rates = {}
         for chip, key, on in ((self.chipUsb, "usb", c["usb"]), (self.chipDongle, "dongle", c["dongle"])):
-            chip.setText(f"{self.t(key)}: {self.t('connected') if on else self.t('missing')}")
+            hz = f" · {self.rates[key]} Hz" if on and key in self.rates else ""
+            chip.setText(f"{self.t(key)}: {self.t('connected') if on else self.t('missing')}{hz}")
             chip.setObjectName("chipOn" if on else "chip")
             chip.style().unpolish(chip)
             chip.style().polish(chip)
