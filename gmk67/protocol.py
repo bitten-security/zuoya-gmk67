@@ -143,6 +143,23 @@ class Keyboard:
             self._send(list(area[i * 64:(i + 1) * 64]))
         self._send([4, 0x02])
 
+    def write_keymap(self, macro_keys):
+        """macro_keys: {light_index: macro_slot}. Rewrites the whole remap table (command 0x11 = top layer,
+        0x27 = Fn layer, 9 pages each); an entry is 4 bytes at index * 4, [06, 0, slot, 0] runs a macro.
+        Every other key goes back to its default, and the Fn layer is cleared."""
+        table = bytearray(576)
+        for idx, slot in macro_keys.items():
+            table[idx * 4:idx * 4 + 4] = bytes((6, 0, slot, 0))
+        table[574:576] = b"\xaa\x55"
+        empty = bytearray(576)
+        empty[574:576] = b"\xaa\x55"
+        for cmd, data in ((0x11, table), (0x27, empty)):
+            self._send([4, 0x18])
+            self._send([4, cmd, 0, 0, 0, 0, 0, 0, 9])
+            for i in range(9):
+                self._send(list(data[i * 64:(i + 1) * 64]))
+            self._send([4, 0xF0])
+
     def set_custom(self, colors, brightness=15):
         """Per-key colors. colors: {light_index: (r, g, b)}. Data is 9 pages of 64 bytes, 4 bytes per key
         [index, r, g, b] stored at index * 4, ending with aa 55; then custom mode 0x80 is selected."""
