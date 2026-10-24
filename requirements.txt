@@ -1,4 +1,4 @@
 hidapi
 PySide6
-pycaw
-comtypes
+pycaw; sys_platform == "win32"
+comtypes; sys_platform == "win32"

@@ -18,11 +18,10 @@ from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS
                        build_macro_area, entry_key, entry_macro, entry_media, text_to_events)
 from .theme import DEFAULT as DEFAULT_THEME
 from .theme import PALETTE, THEMES, build_qss, pal, set_theme
+from .osint import autostart_enabled, set_autostart, store_dir
 from .usbrate import polling_rates
 
-STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
-STORE.mkdir(parents=True, exist_ok=True)
-CFG = STORE / "config.json"
+CFG = store_dir() / "config.json"
 DEFAULT_FX = {"effect": 1, "rgb": [255, 0, 0], "random": False, "brightness": 16, "speed": 11, "direction": 0}
 
 
@@ -34,37 +33,6 @@ def app_icon():
     if not _ICON:
         _ICON.append(QIcon(str(Path(__file__).parent / "icon.png")))
     return _ICON[0]
-
-
-RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
-RUN_NAME = "GMK67Control"
-
-
-def autostart_command():
-    if getattr(sys, "frozen", False):
-        return f'"{sys.executable}" --minimized'
-    return f'"{Path(sys.executable).with_name("pythonw.exe")}" "{Path(sys.argv[0]).resolve()}" --minimized'
-
-
-def autostart_enabled():
-    try:
-        import winreg
-        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
-            return winreg.QueryValueEx(k, RUN_NAME)[0] == autostart_command()
-    except OSError:
-        return False
-
-
-def set_autostart(on):
-    import winreg
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
-        if on:
-            winreg.SetValueEx(k, RUN_NAME, 0, winreg.REG_SZ, autostart_command())
-        else:
-            try:
-                winreg.DeleteValue(k, RUN_NAME)
-            except FileNotFoundError:
-                pass
 
 
 def load_cfg():

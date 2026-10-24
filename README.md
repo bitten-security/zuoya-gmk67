@@ -29,6 +29,14 @@ Open-source replacement for the vendor driver of the **Zuoya GMK67** keyboard (U
 Download `GMK67Control-Setup.exe` (installer) or `GMK67Control.exe` (portable) from the
 [Releases](../../releases) page. macOS is planned.
 
+## Install (macOS, experimental)
+
+The macOS port builds in CI (`docs/ci-release.yml.txt` → `.github/workflows/`) as `GMK67Control-mac-arm64.dmg`
+(Apple silicon) and `-x86_64.dmg` (Intel). **It has never been run on a real Mac by the author.** The app is only ad-hoc
+signed, so macOS blocks the first launch: right-click → Open, or `xattr -dr com.apple.quarantine "GMK67 Control.app"`.
+macOS may ask for **Input Monitoring** permission (System Settings → Privacy & Security) to talk to the keyboard.
+Not available on macOS: USB polling-rate display. Volume display uses `osascript`. Please open an issue with results.
+
 ## Run from source
 
 ```bash
