@@ -1,2 +1,4 @@
 hidapi
 PySide6
+pycaw
+comtypes

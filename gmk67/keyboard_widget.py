@@ -1,9 +1,11 @@
 import json
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
+
+from .audio import Volume
 
 LAYOUT = json.loads((Path(__file__).parent / "layout.json").read_text(encoding="utf-8"))
 
@@ -13,12 +15,17 @@ class KeyboardWidget(QWidget):
     selectionChanged = Signal()
     knobClicked = Signal()
 
-    KNOB = {"x": 730, "y": 30, "w": 44, "h": 44}      # rotary knob, top right (not part of the LED matrix)
+    KNOB = {"x": 727, "y": 26, "w": 50, "h": 50}      # rotary knob, top right (not part of the LED matrix)
 
     def __init__(self):
         super().__init__()
         self.keys = LAYOUT["keys"]
         self.knob_selected = False
+        self.volume = Volume()
+        self.vol_state = self.volume.read()
+        self._vol_timer = QTimer(self, interval=250)
+        self._vol_timer.timeout.connect(self._poll_volume)
+        self._vol_timer.start()
         self.colors = {}          # light index -> (r, g, b)
         self.selected = set()
         self.setMinimumSize(560, 215)
@@ -49,8 +56,8 @@ class KeyboardWidget(QWidget):
         if e.button() != Qt.LeftButton:
             return
         if self._rect(self.KNOB).contains(e.position()):
-            self.knob_selected = not self.knob_selected
-            self.update()
+            self.volume.toggle_mute()          # same effect as pressing the physical knob
+            self._poll_volume()
             self.knobClicked.emit()
             return
         ctrl = bool(e.modifiers() & Qt.ControlModifier)
@@ -85,17 +92,40 @@ class KeyboardWidget(QWidget):
         self._drag_rect = None
         self.update()
 
+    def _poll_volume(self):
+        state = self.volume.read()
+        if state != self.vol_state:
+            self.vol_state = state
+            self.update()
+
     def _paint_knob(self, p):
+        """Knob with a ring showing the Windows volume, the percentage inside, and a mute sign."""
         r = self._rect(self.KNOB)
         c = r.center()
         rad = min(r.width(), r.height()) / 2
-        p.setPen(QPen(QColor("#ffffff") if self.knob_selected else QColor("#4a5266"), 2.5 if self.knob_selected else 1.5))
+        p.setPen(QPen(QColor("#ffffff") if self.knob_selected else QColor("#4a5266"),
+                      2.5 if self.knob_selected else 1.5))
         p.setBrush(QColor("#0c0e13"))
         p.drawEllipse(c, rad, rad)
-        p.setPen(QPen(QColor("#2f3647"), 1))
-        p.drawEllipse(c, rad * 0.62, rad * 0.62)
-        p.setPen(QPen(QColor("#5b8cff"), 3, Qt.SolidLine, Qt.RoundCap))      # indicator notch
-        p.drawLine(QPointF(c.x(), c.y() - rad * 0.28), QPointF(c.x(), c.y() - rad * 0.78))
+        if self.vol_state is None:
+            return
+        pct, muted = self.vol_state
+        ring = QRectF(c.x() - rad * 0.86, c.y() - rad * 0.86, rad * 1.72, rad * 1.72)
+        p.setBrush(Qt.NoBrush)
+        p.setPen(QPen(QColor("#2a3040"), 3.5, Qt.SolidLine, Qt.RoundCap))
+        p.drawArc(ring, 225 * 16, -270 * 16)                       # track: 270 degrees, gap at the bottom
+        p.setPen(QPen(QColor("#e0485a") if muted else QColor("#5b8cff"), 3.5, Qt.SolidLine, Qt.RoundCap))
+        if pct > 0:
+            p.drawArc(ring, 225 * 16, int(-270 * 16 * pct / 100))
+        font = QFont("Segoe UI", max(7, int(rad * 0.42)))
+        font.setBold(True)
+        p.setFont(font)
+        p.setPen(QColor("#8a93a6") if muted else QColor("#ffffff"))
+        p.drawText(QRectF(c.x() - rad, c.y() - rad * 0.55, rad * 2, rad * 1.1), Qt.AlignCenter, str(pct))
+        if muted:                                                   # mute sign: crossed-out speaker mark
+            p.setPen(QPen(QColor("#e0485a"), 2.5, Qt.SolidLine, Qt.RoundCap))
+            p.drawLine(QPointF(c.x() - rad * 0.5, c.y() + rad * 0.55), QPointF(c.x() + rad * 0.5, c.y() - rad * 0.55))
+            p.drawEllipse(c, rad * 0.62, rad * 0.62)
 
     def paintEvent(self, _):
         p = QPainter(self)
