@@ -12,8 +12,8 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox,
 
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
-from .protocol import (EFFECTS, MACRO_BASE, MACRO_END, MIN_DELAY_MS, Keyboard, build_macro_area,
-                       text_to_events)
+from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS, Keyboard,
+                       build_macro_area, entry_key, entry_macro, entry_media, text_to_events)
 from .theme import PALETTE, QSS
 
 STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
@@ -33,6 +33,7 @@ def load_cfg():
     cfg.setdefault("keys", {})
     cfg.setdefault("tab", 0)
     cfg.setdefault("macros", [])
+    cfg.setdefault("remap", {})
     return cfg
 
 
@@ -111,6 +112,7 @@ class Main(QMainWindow):
         self.tabs.addTab(self.build_fx_tab(), "")
         self.tabs.addTab(self.build_keys_tab(), "")
         self.tabs.addTab(self.build_macros_tab(), "")
+        self.tabs.addTab(self.build_funcs_tab(), "")
         self.tabs.currentChanged.connect(self.tab_changed)
         body.addWidget(self.tabs, 1)
         body.addWidget(self.build_profiles(), 0)
@@ -348,12 +350,91 @@ class Main(QMainWindow):
             self.say(self.t("m_full"))
             return
         macros = [(text_to_events(m["text"]), m["delay"]) for m in self.cfg["macros"]]
-        keys = {m["key"]: slot for slot, m in enumerate(self.cfg["macros"]) if m.get("key") is not None}
 
         def go():
             self.kb.write_macros(macros)
-            self.kb.write_keymap(keys)
+            self.kb.write_keymap(self.keymap_entries())
         self.send(go)
+
+    def keymap_entries(self):
+        """Function remaps plus macro keys (a macro key wins over a plain remap on the same key)."""
+        entries = {}
+        for idx, r in self.cfg["remap"].items():
+            if r["t"] == "key":
+                entries[int(idx)] = entry_key(KEYS[r["v"]])
+            elif r["t"] == "media":
+                entries[int(idx)] = entry_media(MEDIA[r["v"]])
+        for slot, m in enumerate(self.cfg["macros"]):
+            if m.get("key") is not None:
+                entries[m["key"]] = entry_macro(slot)
+        return entries
+
+    # ------------------------------------------------------------- functions
+    def build_funcs_tab(self):
+        page = QWidget()
+        lay = QHBoxLayout(page)
+        lay.setContentsMargins(0, 12, 0, 0)
+        c = card()
+        v = QVBoxLayout(c)
+        v.setContentsMargins(16, 14, 16, 14)
+        self.fHint = QLabel()
+        self.fHint.setObjectName("subtitle")
+        self.fHint.setWordWrap(True)
+        v.addWidget(self.fHint)
+        self.board2 = KeyboardWidget()
+        self.board2.selectionChanged.connect(lambda: self.fSel.setText(
+            f"{len(self.board2.selected)} {self.t('selected')}"))
+        v.addWidget(self.board2, 1)
+        row = QHBoxLayout()
+        self.fCat, self.fFunc = QComboBox(), QComboBox()
+        self.fCat.addItem("", "key")
+        self.fCat.addItem("", "media")
+        self.fCat.currentIndexChanged.connect(self.funcs_fill)
+        row.addWidget(self.fCat)
+        row.addWidget(self.fFunc, 1)
+        self.fSel = QLabel()
+        self.fSel.setObjectName("subtitle")
+        row.addWidget(self.fSel)
+        v.addLayout(row)
+        row2 = QHBoxLayout()
+        self.bFApply, self.bFReset, self.bFSend = QPushButton(), QPushButton(), QPushButton()
+        self.bFSend.setObjectName("primary")
+        self.bFApply.clicked.connect(self.funcs_apply)
+        self.bFReset.clicked.connect(self.funcs_reset)
+        self.bFSend.clicked.connect(self.funcs_send)
+        row2.addWidget(self.bFApply)
+        row2.addWidget(self.bFReset)
+        row2.addStretch()
+        row2.addWidget(self.bFSend)
+        v.addLayout(row2)
+        lay.addWidget(c, 1)
+        self.funcs_fill()
+        self.funcs_paint()
+        return page
+
+    def funcs_fill(self):
+        self.fFunc.clear()
+        self.fFunc.addItems(list(KEYS if self.fCat.currentData() == "key" else MEDIA))
+
+    def funcs_paint(self):
+        self.board2.colors = {int(i): (74, 123, 255) for i in self.cfg["remap"]}
+        self.board2.update()
+
+    def funcs_apply(self):
+        for i in self.board2.selected:
+            self.cfg["remap"][str(i)] = {"t": self.fCat.currentData(), "v": self.fFunc.currentText()}
+        self.save_cfg()
+        self.funcs_paint()
+
+    def funcs_reset(self):
+        for i in self.board2.selected:
+            self.cfg["remap"].pop(str(i), None)
+        self.save_cfg()
+        self.funcs_paint()
+
+    def funcs_send(self):
+        entries = self.keymap_entries()
+        self.send(lambda: self.kb.write_keymap(entries))
 
     def build_profiles(self):
         c = card()
@@ -383,6 +464,12 @@ class Main(QMainWindow):
         self.tabs.setTabText(0, self.t("tab_fx"))
         self.tabs.setTabText(1, self.t("tab_keys"))
         self.tabs.setTabText(2, self.t("tab_macros"))
+        self.tabs.setTabText(3, self.t("tab_funcs"))
+        self.fCat.setItemText(0, self.t("f_keys"))
+        self.fCat.setItemText(1, self.t("f_media"))
+        for w, k in ((self.fHint, "f_hint"), (self.bFApply, "f_apply"), (self.bFReset, "f_reset"),
+                     (self.bFSend, "f_send")):
+            w.setText(self.t(k))
         for w, k in ((self.mHint, "m_hint"), (self.lMName, "m_name"), (self.lMText, "m_text"),
                      (self.lMDelay, "m_delay"), (self.lMKey, "m_key"), (self.lMSpace, "m_space"), (self.bMSave, "m_save"),
                      (self.bMSend, "m_send"), (self.bMNew, "m_new"), (self.bMDel, "delete")):

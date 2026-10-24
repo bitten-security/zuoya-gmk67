@@ -27,6 +27,36 @@ SPECIAL = {"ENTER": 0x28, "TAB": 0x2B, "ESC": 0x29, "BACKSPACE": 0x2A, "SPACE": 
            "WIN": 0xE3}
 
 
+# Remap table entries (4 bytes per key, verified on the keyboard): [2, 0, usage, 0] = normal key,
+# [3, lo, hi, 0] = consumer/media usage (16 bit), [6, 0, slot, 0] = macro.
+MEDIA = {  # same icons as the vendor app
+    "Volume +": 0xE9, "Volume -": 0xEA, "Mute": 0xE2, "Play / Pause": 0xCD, "Stop": 0xB7,
+    "Previous track": 0xB6, "Next track": 0xB5, "Calculator": 0x192, "My Computer": 0x194, "E-mail": 0x18A,
+    "Media player": 0x183, "Browser home": 0x223, "Browser refresh": 0x227, "Browser stop": 0x226,
+    "Browser back": 0x224, "Browser forward": 0x225, "Favorites": 0x22A, "Search": 0x221,
+}
+KEYS = {c.upper(): u for c, u in _LETTERS.items()}
+KEYS.update({c: u for c, u in _DIGITS.items()})
+KEYS.update({f"F{i + 1}": 0x3A + i for i in range(12)})
+KEYS.update({"Esc": 0x29, "Tab": 0x2B, "Enter": 0x28, "Space": 0x2C, "Backspace": 0x2A, "Delete": 0x4C,
+             "Insert": 0x49, "Home": 0x4A, "End": 0x4D, "Page Up": 0x4B, "Page Down": 0x4E, "Print Screen": 0x46,
+             "Scroll Lock": 0x47, "Pause": 0x48, "Caps Lock": 0x39, "Up": 0x52, "Down": 0x51, "Left": 0x50,
+             "Right": 0x4F, "Left Ctrl": 0xE0, "Left Shift": 0xE1, "Left Alt": 0xE2, "Left Win": 0xE3,
+             "Right Ctrl": 0xE4, "Right Shift": 0xE5, "Right Alt": 0xE6, "Menu": 0x65})
+
+
+def entry_key(usage):
+    return bytes((2, 0, usage, 0))
+
+
+def entry_media(usage):
+    return bytes((3, usage & 0xFF, usage >> 8, 0))
+
+
+def entry_macro(slot):
+    return bytes((6, 0, slot, 0))
+
+
 def text_to_events(text):
     """'Hello{ENTER}' -> [(usage, pressed)]. {NAME} inserts a special key; uppercase/symbols add Shift."""
     out, i = [], 0
@@ -147,13 +177,13 @@ class Keyboard:
             self._send(list(area[i * 64:(i + 1) * 64]))
         self._send([4, 0x02])
 
-    def write_keymap(self, macro_keys):
-        """macro_keys: {light_index: macro_slot}. Rewrites the whole remap table (command 0x11 = top layer,
-        0x27 = Fn layer, 9 pages each); an entry is 4 bytes at index * 4, [06, 0, slot, 0] runs a macro.
+    def write_keymap(self, entries):
+        """entries: {light_index: 4-byte entry} (see entry_key / entry_media / entry_macro). Rewrites the whole
+        remap table (command 0x11 = top layer, 0x27 = Fn layer, 9 pages each), the entry living at index * 4.
         Every other key goes back to its default, and the Fn layer is cleared."""
         table = bytearray(576)
-        for idx, slot in macro_keys.items():
-            table[idx * 4:idx * 4 + 4] = bytes((6, 0, slot, 0))
+        for idx, entry in entries.items():
+            table[idx * 4:idx * 4 + 4] = entry
         table[574:576] = b"\xaa\x55"
         empty = bytearray(576)
         empty[574:576] = b"\xaa\x55"
