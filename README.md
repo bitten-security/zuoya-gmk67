@@ -15,6 +15,7 @@ Open-source replacement for the vendor driver of the **Zuoya GMK67** keyboard (U
 - **Macros**: text macros (`Hello{ENTER}`) bound to a key. The keyboard memory is small (174 bytes).
 - **WIN / MAC layout** (swaps Win and Alt).
 - **Profiles**, English / Português, system tray, start with Windows.
+- **6 themes**: Dark, Light, Midnight, Neon, Forest, Sunset (selector in the header).
 - Knob shows the Windows volume and mute state; connection indicators (USB / 2.4G) with the USB polling rate (read-only).
 
 ### Limits
@@ -51,7 +52,7 @@ Substituto de código aberto para o driver oficial do teclado **Zuoya GMK67**.
 
 **Recursos:** efeitos de luz (cor, brilho, velocidade, direção), luz por tecla com teclado virtual, funções por
 tecla (inclusive multimídia), macros de texto, layout WIN/MAC, perfis, idioma PT/EN, bandeja do sistema, início com o
-Windows e o knob mostrando o volume do Windows.
+Windows, 6 temas de cores e o knob mostrando o volume do Windows.
 
 **Limites:** luz, teclas e macros só funcionam pelo **cabo USB**; a bateria não pode ser lida e a taxa de polling não
 pode ser alterada. Gravar funções de tecla substitui a tabela inteira de teclas do teclado.

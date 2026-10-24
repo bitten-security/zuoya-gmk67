@@ -12,7 +12,7 @@ TEXT = {
            "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
            "led_info": "Luzes ao lado da Fn: a de cima mostra o modo de conexão (branca em 2.4G), a de baixo é a "
                        "bateria. São do próprio teclado; não dá para ler o nível nem alterar por software.",
-           "autostart": "Iniciar com o Windows", "tray_open": "Abrir", "tray_quit": "Sair",
+           "theme": "Tema", "autostart": "Iniciar com o Windows", "tray_open": "Abrir", "tray_quit": "Sair",
            "tray_hint": "O app continua na bandeja do sistema. Use o ícone para abrir ou sair.",
            "os_label": "Layout do sistema (troca Win/Alt como no Mac):",
            "tab_funcs": "Funções", "f_keys": "Tecla do teclado", "f_media": "Multimídia",
@@ -40,7 +40,7 @@ TEXT = {
            "selected": "selected", "language": "Language", "palette": "Quick colors",
            "led_info": "Lights beside Fn: the top one shows the connection mode (white on 2.4G), the bottom one is "
                        "the battery. They belong to the keyboard; software can neither read the level nor change them.",
-           "autostart": "Start with Windows", "tray_open": "Open", "tray_quit": "Quit",
+           "theme": "Theme", "autostart": "Start with Windows", "tray_open": "Open", "tray_quit": "Quit",
            "tray_hint": "The app keeps running in the system tray. Use its icon to open or quit.",
            "os_label": "System layout (swaps Win/Alt like on a Mac):",
            "tab_funcs": "Functions", "f_keys": "Keyboard key", "f_media": "Media",
