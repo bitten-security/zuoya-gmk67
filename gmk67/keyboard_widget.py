@@ -94,7 +94,7 @@ class KeyboardWidget(QWidget):
             p.setBrush(fill)
             p.drawRoundedRect(r, 6, 6)
             p.setPen(QColor("black") if fill.lightness() > 140 else QColor("#c9d1e0"))
-            p.drawText(r, Qt.AlignCenter, k["name"].upper() if len(k["name"]) < 3 else k["name"][:6])
+            p.drawText(r, Qt.AlignCenter, k["label"].upper() if len(k["label"]) < 3 else k["label"])
         if self._drag_rect:
             p.setPen(QPen(QColor("#6aa9ff"), 1, Qt.DashLine))
             p.setBrush(QColor(106, 169, 255, 40))

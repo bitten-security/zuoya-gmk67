@@ -6,12 +6,16 @@ from pathlib import Path
 
 SRC = Path(r"C:\Program Files (x86)\ZUOYO GMK67 Driver\KeyboardLayout.xml")
 DST = Path(__file__).resolve().parent.parent / "gmk67" / "layout.json"
+SHORT = {"control": "ctrl", "page up": "pgup", "page down": "pgdn", "backspace": "bksp", "enter": "enter",
+         "caps": "caps", "shift": "shift", "space": "space"}
 
-text = SRC.read_text(encoding="utf-8")
 keys = []
-for m in re.finditer(r'<key code="([^"]+)" name="([^"]*)"[^>]*?rect_left="(\d+)" rect_top="(\d+)" '
-                     r'rect_width="(\d+)" rect_height="(\d+)"[^>]*?light_index="(\d+)"', text):
-    keys.append({"name": html.unescape(m[2]), "x": int(m[3]), "y": int(m[4]),
-                 "w": int(m[5]), "h": int(m[6]), "idx": int(m[7])})
+for line in SRC.read_text(encoding="utf-8").splitlines():
+    if not line.lstrip().startswith("<key "):
+        continue
+    attr = {k: html.unescape(v) for k, v in re.findall(r'(\w+)="(.*?)"(?=\s+\w+="|\s*/>)', line)}
+    keys.append({"name": attr["name"], "label": SHORT.get(attr["name"], attr["name"]),
+                 "x": int(attr["rect_left"]), "y": int(attr["rect_top"]),
+                 "w": int(attr["rect_width"]), "h": int(attr["rect_height"]), "idx": int(attr["light_index"])})
 DST.write_text(json.dumps({"width": 800, "height": 300, "keys": keys}, ensure_ascii=False), encoding="utf-8")
 print(len(keys), "keys ->", DST)
