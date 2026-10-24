@@ -397,6 +397,15 @@ class Main(QMainWindow):
         self.fSel.setObjectName("subtitle")
         row.addWidget(self.fSel)
         v.addLayout(row)
+        osrow = QHBoxLayout()
+        self.lOs = QLabel()
+        self.bWin, self.bMac = QPushButton("WIN"), QPushButton("MAC")
+        self.bWin.clicked.connect(lambda: self.set_os("win"))
+        self.bMac.clicked.connect(lambda: self.set_os("mac"))
+        for w in (self.lOs, self.bWin, self.bMac):
+            osrow.addWidget(w)
+        osrow.addStretch()
+        v.addLayout(osrow)
         row2 = QHBoxLayout()
         self.bFApply, self.bFReset, self.bFSend = QPushButton(), QPushButton(), QPushButton()
         self.bFSend.setObjectName("primary")
@@ -417,9 +426,31 @@ class Main(QMainWindow):
         self.fFunc.clear()
         self.fFunc.addItems(list(KEYS if self.fCat.currentData() == "key" else MEDIA))
 
+    # Mac layout: Windows keys sit where Option goes and vice versa (Ctrl | Opt | Cmd), keys by light index
+    MAC_REMAP = {"92": ("Left Alt"), "93": ("Left Win"), "95": ("Right Win")}
+
+    def os_mode(self):
+        r = self.cfg["remap"]
+        return "mac" if all(r.get(i, {}).get("v") == v for i, v in self.MAC_REMAP.items()) else "win"
+
+    def set_os(self, mode):
+        for i in self.MAC_REMAP:
+            self.cfg["remap"].pop(i, None)
+        if mode == "mac":
+            for i, v in self.MAC_REMAP.items():
+                self.cfg["remap"][i] = {"t": "key", "v": v}
+        self.save_cfg()
+        self.funcs_paint()
+        self.funcs_send()
+
     def funcs_paint(self):
         self.board2.colors = {int(i): (74, 123, 255) for i in self.cfg["remap"]}
         self.board2.update()
+        mac = self.os_mode() == "mac"
+        for b, on in ((self.bMac, mac), (self.bWin, not mac)):
+            b.setObjectName("primary" if on else "")
+            b.style().unpolish(b)
+            b.style().polish(b)
 
     def funcs_apply(self):
         for i in self.board2.selected:
@@ -469,7 +500,7 @@ class Main(QMainWindow):
         self.fCat.setItemText(0, self.t("f_keys"))
         self.fCat.setItemText(1, self.t("f_media"))
         for w, k in ((self.fHint, "f_hint"), (self.bFApply, "f_apply"), (self.bFReset, "f_reset"),
-                     (self.bFSend, "f_send")):
+                     (self.bFSend, "f_send"), (self.lOs, "os_label")):
             w.setText(self.t(k))
         for w, k in ((self.mHint, "m_hint"), (self.lMName, "m_name"), (self.lMText, "m_text"),
                      (self.lMDelay, "m_delay"), (self.lMKey, "m_key"), (self.lMSpace, "m_space"), (self.bMSave, "m_save"),
