@@ -14,6 +14,7 @@ class KeyboardWidget(QWidget):
     """Virtual keyboard: click / ctrl+click / drag to select keys, each key shows its assigned color."""
     selectionChanged = Signal()
     knobClicked = Signal()
+    indicatorClicked = Signal()
 
     KNOB = {"x": 727, "y": 26, "w": 50, "h": 50}      # rotary knob, top right (not part of the LED matrix)
 
@@ -55,6 +56,9 @@ class KeyboardWidget(QWidget):
     def mousePressEvent(self, e):
         if e.button() != Qt.LeftButton:
             return
+        if self._rect({"x": 606, "y": 229, "w": 16, "h": 38}).contains(e.position()):
+            self.indicatorClicked.emit()
+            return
         if self._rect(self.KNOB).contains(e.position()):
             self.volume.toggle_mute()          # same effect as pressing the physical knob
             self._poll_volume()
@@ -91,6 +95,25 @@ class KeyboardWidget(QWidget):
         self._drag_start = None
         self._drag_rect = None
         self.update()
+
+    def _paint_indicators(self, p):
+        """The two status LEDs beside Fn (battery above, backlight/connection below). They are driven by the
+        keyboard firmware and cannot be set or read, so they are drawn as neutral, non-interactive icons."""
+        strip = self._rect({"x": 606, "y": 229, "w": 16, "h": 38})
+        p.setPen(QPen(QColor("#2f3647"), 1))
+        p.setBrush(QColor("#0c0e13"))
+        p.drawRoundedRect(strip, 5, 5)
+        cx = strip.center().x()
+        r = strip.width() * 0.22
+        p.setPen(QPen(QColor("#6b7488"), 1.4))
+        p.setBrush(Qt.NoBrush)
+        y1 = strip.top() + strip.height() * 0.30
+        body = QRectF(cx - r * 1.4, y1 - r * 0.9, r * 2.8, r * 1.8)           # battery glyph
+        p.drawRoundedRect(body, 1.5, 1.5)
+        p.drawLine(QPointF(body.right() + 1, y1 - r * 0.4), QPointF(body.right() + 1, y1 + r * 0.4))
+        y2 = strip.top() + strip.height() * 0.72
+        p.drawEllipse(QPointF(cx, y2 - r * 0.2), r * 1.1, r * 1.1)             # bulb glyph
+        p.drawLine(QPointF(cx - r * 0.5, y2 + r * 1.3), QPointF(cx + r * 0.5, y2 + r * 1.3))
 
     def _poll_volume(self):
         state = self.volume.read()
@@ -147,6 +170,7 @@ class KeyboardWidget(QWidget):
             p.setPen(QColor("black") if fill.lightness() > 140 else QColor("#c9d1e0"))
             p.drawText(r, Qt.AlignCenter, k["label"].upper() if len(k["label"]) < 3 else k["label"])
         self._paint_knob(p)
+        self._paint_indicators(p)
         if self._drag_rect:
             p.setPen(QPen(QColor("#6aa9ff"), 1, Qt.DashLine))
             p.setBrush(QColor(106, 169, 255, 40))
