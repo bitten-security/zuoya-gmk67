@@ -16,7 +16,8 @@ from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
 from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS, PID, VID, Keyboard,
                        build_macro_area, entry_key, entry_macro, entry_media, text_to_events)
-from .theme import PALETTE, QSS
+from .theme import DEFAULT as DEFAULT_THEME
+from .theme import PALETTE, THEMES, build_qss, pal, set_theme
 from .usbrate import polling_rates
 
 STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
@@ -78,6 +79,7 @@ def load_cfg():
     cfg.setdefault("tab", 0)
     cfg.setdefault("macros", [])
     cfg.setdefault("remap", {})
+    cfg.setdefault("theme", DEFAULT_THEME)
     return cfg
 
 
@@ -91,7 +93,7 @@ def swatch(hex_color):
     b = QPushButton()
     b.setFixedSize(26, 26)
     b.setCursor(Qt.PointingHandCursor)
-    b.setStyleSheet(f"background:{hex_color}; border:1px solid #3a4254; border-radius:13px;")
+    b.setStyleSheet(f"background:{hex_color}; border:1px solid {pal()['button_border']}; border-radius:13px;")
     return b
 
 
@@ -99,6 +101,8 @@ class Main(QMainWindow):
     def __init__(self):
         super().__init__()
         self.cfg = load_cfg()
+        set_theme(self.cfg["theme"])
+        QApplication.instance().setStyleSheet(build_qss())
         self.kb = Keyboard()
         self.fx_rgb = tuple(self.cfg["fx"]["rgb"])
         self.pen = (255, 0, 0)
@@ -149,6 +153,13 @@ class Main(QMainWindow):
         self.chkAuto.toggled.connect(self.toggle_autostart)
         head.addWidget(self.chkAuto)
         head.addSpacing(10)
+        self.themeBox = QComboBox()
+        for key, t in THEMES.items():
+            self.themeBox.addItem(t["name"], key)
+        self.themeBox.setCurrentIndex(max(0, self.themeBox.findData(self.cfg["theme"])))
+        self.themeBox.currentIndexChanged.connect(self.apply_theme)
+        head.addWidget(self.themeBox)
+        head.addSpacing(6)
         self.lang = QComboBox()
         self.lang.addItems(["pt", "en"])
         self.lang.setCurrentText(self.cfg["lang"])
@@ -582,6 +593,20 @@ class Main(QMainWindow):
             self.save_cfg()
             self.tray.showMessage(self.t("title"), self.t("tray_hint"), app_icon(), 4000)
 
+    def apply_theme(self):
+        key = self.themeBox.currentData()
+        set_theme(key)
+        QApplication.instance().setStyleSheet(build_qss())
+        self.cfg["theme"] = key
+        self.save_cfg()
+        self.paint_buttons()
+        for b in (self.board, self.board2):
+            b.update()
+        for sw in self.findChildren(QPushButton):          # the quick-color swatches carry their own border
+            if sw.width() == 26 and sw.height() == 26:
+                hx = sw.styleSheet().split("background:")[1].split(";")[0]
+                sw.setStyleSheet(f"background:{hx}; border:1px solid {pal()['button_border']}; border-radius:13px;")
+
     def toggle_autostart(self, on):
         try:
             set_autostart(on)
@@ -594,6 +619,7 @@ class Main(QMainWindow):
     def retext(self):
         self.setWindowTitle(self.t("title"))
         self.chkAuto.setText(self.t("autostart"))
+        self.themeBox.setToolTip(self.t("theme"))
         self.actOpen.setText(self.t("tray_open"))
         self.actAuto.setText(self.t("autostart"))
         self.actQuit.setText(self.t("tray_quit"))
@@ -665,7 +691,7 @@ class Main(QMainWindow):
         for btn, rgb in ((self.colorBtn, self.fx_rgb), (self.penBtn, self.pen)):
             c = QColor(*rgb)
             btn.setStyleSheet(f"background:{c.name()}; color:{'black' if c.lightness() > 128 else 'white'};"
-                              "border:1px solid #3a4254; border-radius:8px; padding:7px 14px;")
+                              f"border:1px solid {pal()['button_border']}; border-radius:8px; padding:7px 14px;")
         self.colorBtn.setText(self.t("pick"))
         self.penBtn.setText(self.t("pick"))
 
@@ -811,7 +837,6 @@ def main():
     if not lock.tryLock(0):                       # already running (maybe hidden in the tray)
         sys.exit(0)
     app.setStyle("Fusion")
-    app.setStyleSheet(QSS)
     app.setWindowIcon(app_icon())
     app.setQuitOnLastWindowClosed(False)
     m = Main()

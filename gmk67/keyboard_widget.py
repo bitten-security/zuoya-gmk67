@@ -6,6 +6,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QWidget
 
 from .audio import Volume
+from .theme import pal
 
 LAYOUT = json.loads((Path(__file__).parent / "layout.json").read_text(encoding="utf-8"))
 
@@ -100,18 +101,20 @@ class KeyboardWidget(QWidget):
     def _paint_indicators(self, p):
         """The two status LEDs beside Fn (battery above, backlight/connection below). They are driven by the
         keyboard firmware and cannot be set or read, so they are drawn as neutral, non-interactive icons."""
+        t = pal()
         strip = self._rect({"x": 606, "y": 229, "w": 16, "h": 38})
-        p.setPen(QPen(QColor("#2f3647"), 1))
-        p.setBrush(QColor("#0c0e13"))
+        p.setPen(QPen(QColor(t["kbd_border"]), 1))
+        p.setBrush(QColor(t["knob_bg"]))
         p.drawRoundedRect(strip, 5, 5)
         cx = strip.center().x()
         r = strip.width() * 0.22
-        dim = QPen(QColor("#6b7488"), 1.4)
+        dim = QPen(QColor(t["muted"]), 1.4)
         # top: mode/connection light, white while the keyboard runs on 2.4G (observed on the real keyboard)
         on = self.link == "dongle"
+        lit = QColor("#ffffff") if QColor(t["knob_bg"]).lightness() < 128 else QColor("#f0b400")
         y1 = strip.top() + strip.height() * 0.30
-        p.setPen(QPen(QColor("#ffffff"), 1.4) if on else dim)
-        p.setBrush(QColor("#ffffff") if on else Qt.NoBrush)
+        p.setPen(QPen(lit, 1.4) if on else dim)
+        p.setBrush(lit if on else Qt.NoBrush)
         p.drawEllipse(QPointF(cx, y1 - r * 0.2), r * 1.1, r * 1.1)             # bulb glyph
         p.drawLine(QPointF(cx - r * 0.5, y1 + r * 1.3), QPointF(cx + r * 0.5, y1 + r * 1.3))
         # bottom: battery (firmware only, level cannot be read)
@@ -133,35 +136,37 @@ class KeyboardWidget(QWidget):
         r = self._rect(self.KNOB)
         c = r.center()
         rad = min(r.width(), r.height()) / 2
-        p.setPen(QPen(QColor("#ffffff") if self.knob_selected else QColor("#4a5266"),
+        t = pal()
+        p.setPen(QPen(QColor(t["sel"]) if self.knob_selected else QColor(t["kbd_border"]),
                       2.5 if self.knob_selected else 1.5))
-        p.setBrush(QColor("#0c0e13"))
+        p.setBrush(QColor(t["knob_bg"]))
         p.drawEllipse(c, rad, rad)
         if self.vol_state is None:
             return
         pct, muted = self.vol_state
         ring = QRectF(c.x() - rad * 0.86, c.y() - rad * 0.86, rad * 1.72, rad * 1.72)
         p.setBrush(Qt.NoBrush)
-        p.setPen(QPen(QColor("#2a3040"), 3.5, Qt.SolidLine, Qt.RoundCap))
+        p.setPen(QPen(QColor(t["knob_ring"]), 3.5, Qt.SolidLine, Qt.RoundCap))
         p.drawArc(ring, 225 * 16, -270 * 16)                       # track: 270 degrees, gap at the bottom
-        p.setPen(QPen(QColor("#e0485a") if muted else QColor("#5b8cff"), 3.5, Qt.SolidLine, Qt.RoundCap))
+        p.setPen(QPen(QColor(t["danger"]) if muted else QColor(t["accent"]), 3.5, Qt.SolidLine, Qt.RoundCap))
         if pct > 0:
             p.drawArc(ring, 225 * 16, int(-270 * 16 * pct / 100))
         font = QFont("Segoe UI", max(7, int(rad * 0.42)))
         font.setBold(True)
         p.setFont(font)
-        p.setPen(QColor("#8a93a6") if muted else QColor("#ffffff"))
+        p.setPen(QColor(t["muted"]) if muted else QColor(t["title"]))
         p.drawText(QRectF(c.x() - rad, c.y() - rad * 0.55, rad * 2, rad * 1.1), Qt.AlignCenter, str(pct))
         if muted:                                                   # mute sign: crossed-out speaker mark
-            p.setPen(QPen(QColor("#e0485a"), 2.5, Qt.SolidLine, Qt.RoundCap))
+            p.setPen(QPen(QColor(t["danger"]), 2.5, Qt.SolidLine, Qt.RoundCap))
             p.drawLine(QPointF(c.x() - rad * 0.5, c.y() + rad * 0.55), QPointF(c.x() + rad * 0.5, c.y() - rad * 0.55))
             p.drawEllipse(c, rad * 0.62, rad * 0.62)
 
     def paintEvent(self, _):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
-        p.setBrush(QColor("#15181f"))
-        p.setPen(QPen(QColor("#2a2f3a"), 1))
+        t = pal()
+        p.setBrush(QColor(t["kbd_bg"]))
+        p.setPen(QPen(QColor(t["border"]), 1))
         p.drawRoundedRect(self.rect().adjusted(1, 1, -1, -1), 14, 14)
         font = QFont("Segoe UI", 8)
         font.setBold(True)
@@ -169,16 +174,18 @@ class KeyboardWidget(QWidget):
         for k in self.keys:
             r = self._rect(k).adjusted(2, 2, -2, -2)
             c = self.colors.get(k["idx"])
-            fill = QColor(*c) if c and any(c) else QColor("#232834")
+            fill = QColor(*c) if c and any(c) else QColor(t["kbd_key"])
             sel = k["idx"] in self.selected
-            p.setPen(QPen(QColor("#ffffff") if sel else QColor("#3a4150"), 2.5 if sel else 1))
+            p.setPen(QPen(QColor(t["sel"]) if sel else QColor(t["kbd_border"]), 2.5 if sel else 1))
             p.setBrush(fill)
             p.drawRoundedRect(r, 6, 6)
-            p.setPen(QColor("black") if fill.lightness() > 140 else QColor("#c9d1e0"))
+            p.setPen(QColor("black") if fill.lightness() > 140 else QColor(t["kbd_text"]))
             p.drawText(r, Qt.AlignCenter, k["label"].upper() if len(k["label"]) < 3 else k["label"])
         self._paint_knob(p)
         self._paint_indicators(p)
         if self._drag_rect:
-            p.setPen(QPen(QColor("#6aa9ff"), 1, Qt.DashLine))
-            p.setBrush(QColor(106, 169, 255, 40))
+            acc = QColor(t["accent"])
+            p.setPen(QPen(acc, 1, Qt.DashLine))
+            acc.setAlpha(40)
+            p.setBrush(acc)
             p.drawRect(self._drag_rect)
