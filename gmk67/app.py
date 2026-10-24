@@ -3,12 +3,14 @@ import os
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QColor
+import tempfile
+
+from PySide6.QtCore import QLockFile, Qt, QTimer
+from PySide6.QtGui import QAction, QColor, QIcon
 from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox, QFrame, QGridLayout,
                                QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget, QMainWindow,
-                               QPlainTextEdit, QProgressBar, QPushButton, QSlider, QSpinBox, QTabWidget,
-                               QVBoxLayout, QWidget)
+                               QMenu, QPlainTextEdit, QProgressBar, QPushButton, QSlider, QSpinBox,
+                               QSystemTrayIcon, QTabWidget, QVBoxLayout, QWidget)
 
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
@@ -21,6 +23,47 @@ STORE = Path(os.environ.get("APPDATA", Path.home())) / "GMK67Control"
 STORE.mkdir(parents=True, exist_ok=True)
 CFG = STORE / "config.json"
 DEFAULT_FX = {"effect": 1, "rgb": [255, 0, 0], "random": False, "brightness": 16, "speed": 11, "direction": 0}
+
+
+_ICON = []
+
+
+def app_icon():
+    """Created lazily: a QIcon needs the QApplication to exist first."""
+    if not _ICON:
+        _ICON.append(QIcon(str(Path(__file__).parent / "icon.png")))
+    return _ICON[0]
+
+
+RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+RUN_NAME = "GMK67Control"
+
+
+def autostart_command():
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}" --minimized'
+    return f'"{Path(sys.executable).with_name("pythonw.exe")}" "{Path(sys.argv[0]).resolve()}" --minimized'
+
+
+def autostart_enabled():
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY) as k:
+            return winreg.QueryValueEx(k, RUN_NAME)[0] == autostart_command()
+    except OSError:
+        return False
+
+
+def set_autostart(on):
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE) as k:
+        if on:
+            winreg.SetValueEx(k, RUN_NAME, 0, winreg.REG_SZ, autostart_command())
+        else:
+            try:
+                winreg.DeleteValue(k, RUN_NAME)
+            except FileNotFoundError:
+                pass
 
 
 def load_cfg():
@@ -64,6 +107,7 @@ class Main(QMainWindow):
         self.key_timer = QTimer(self, singleShot=True, interval=200)
         self.key_timer.timeout.connect(self.apply_keys)
         self.build()
+        self.build_tray()
         self.set_fx_state(self.cfg["fx"])
         self.board.colors = {int(k): tuple(v) for k, v in self.cfg["keys"].items()}
         self.tabs.setCurrentIndex(self.cfg["tab"])
@@ -100,6 +144,11 @@ class Main(QMainWindow):
         head.addSpacing(6)
         head.addWidget(self.chipDongle)
         head.addSpacing(14)
+        self.chkAuto = QCheckBox()
+        self.chkAuto.setChecked(autostart_enabled())
+        self.chkAuto.toggled.connect(self.toggle_autostart)
+        head.addWidget(self.chkAuto)
+        head.addSpacing(10)
         self.lang = QComboBox()
         self.lang.addItems(["pt", "en"])
         self.lang.setCurrentText(self.cfg["lang"])
@@ -490,8 +539,64 @@ class Main(QMainWindow):
             v.addWidget(b)
         return c
 
+    # ------------------------------------------------------------------ tray
+    def build_tray(self):
+        self.setWindowIcon(app_icon())
+        self._quit = False
+        self.tray = QSystemTrayIcon(app_icon(), self)
+        menu = QMenu()
+        self.actOpen = QAction(self)
+        self.actOpen.triggered.connect(self.show_window)
+        self.actAuto = QAction(self, checkable=True)
+        self.actAuto.setChecked(self.chkAuto.isChecked())
+        self.actAuto.toggled.connect(self.chkAuto.setChecked)
+        self.actQuit = QAction(self)
+        self.actQuit.triggered.connect(self.quit_app)
+        for a in (self.actOpen, self.actAuto):
+            menu.addAction(a)
+        menu.addSeparator()
+        menu.addAction(self.actQuit)
+        self.tray.setContextMenu(menu)
+        self.tray.setToolTip("Zuoya GMK67")
+        self.tray.activated.connect(lambda r: self.show_window() if r == QSystemTrayIcon.Trigger else None)
+        self.tray.show()
+
+    def show_window(self):
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
+
+    def quit_app(self):
+        self._quit = True
+        self.tray.hide()
+        QApplication.quit()
+
+    def closeEvent(self, e):
+        if self._quit or not self.tray.isVisible():
+            e.accept()
+            return
+        e.ignore()
+        self.hide()
+        if not self.cfg.get("tray_hint"):
+            self.cfg["tray_hint"] = True
+            self.save_cfg()
+            self.tray.showMessage(self.t("title"), self.t("tray_hint"), app_icon(), 4000)
+
+    def toggle_autostart(self, on):
+        try:
+            set_autostart(on)
+        except OSError as e:
+            self.say(f"{self.t('err')}: {e}")
+        self.actAuto.blockSignals(True)
+        self.actAuto.setChecked(on)
+        self.actAuto.blockSignals(False)
+
     def retext(self):
         self.setWindowTitle(self.t("title"))
+        self.chkAuto.setText(self.t("autostart"))
+        self.actOpen.setText(self.t("tray_open"))
+        self.actAuto.setText(self.t("autostart"))
+        self.actQuit.setText(self.t("tray_quit"))
         self.title.setText(self.t("title"))
         self.subtitle.setText(self.t("subtitle"))
         self.tabs.setTabText(0, self.t("tab_fx"))
@@ -702,9 +807,15 @@ class Main(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    lock = QLockFile(str(Path(tempfile.gettempdir()) / "gmk67control.lock"))
+    if not lock.tryLock(0):                       # already running (maybe hidden in the tray)
+        sys.exit(0)
     app.setStyle("Fusion")
     app.setStyleSheet(QSS)
+    app.setWindowIcon(app_icon())
+    app.setQuitOnLastWindowClosed(False)
     m = Main()
     m.resize(1060, 640)
-    m.show()
+    if "--minimized" not in sys.argv:
+        m.show()
     sys.exit(app.exec())
