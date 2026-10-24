@@ -252,6 +252,11 @@ class Main(QMainWindow):
         self.mDelay = QSpinBox()
         self.mDelay.setRange(0, 5000)
         self.mDelay.setValue(0)
+        self.lMKey = QLabel()
+        self.mKey = QComboBox()
+        self.mKey.addItem("-", None)
+        for k in sorted(self.board.keys, key=lambda k: (k["y"], k["x"])):
+            self.mKey.addItem(k["name"].upper(), k["idx"])
         self.mBar = QProgressBar()
         self.mBar.setRange(0, MACRO_END - MACRO_BASE)
         self.mBar.setTextVisible(True)
@@ -261,8 +266,8 @@ class Main(QMainWindow):
         self.bMSend.clicked.connect(self.macro_send)
         self.mText.textChanged.connect(self.macro_space)
         self.mDelay.valueChanged.connect(self.macro_space)
-        for w in (self.lMName, self.mName, self.lMText, self.mText, self.lMDelay, self.mDelay, self.lMSpace,
-                  self.mBar):
+        for w in (self.lMName, self.mName, self.lMText, self.mText, self.lMDelay, self.mDelay, self.lMKey,
+                  self.mKey, self.lMSpace, self.mBar):
             rv.addWidget(w)
         row = QHBoxLayout()
         row.addStretch()
@@ -285,17 +290,20 @@ class Main(QMainWindow):
             self.macro_selected(-1)
 
     def macro_selected(self, row):
-        m = self.cfg["macros"][row] if 0 <= row < len(self.cfg["macros"]) else {"name": "", "text": "", "delay": 0}
+        m = self.cfg["macros"][row] if 0 <= row < len(self.cfg["macros"]) \
+            else {"name": "", "text": "", "delay": 0, "key": None}
         self.mName.setText(m["name"])
         self.mText.setPlainText(m["text"])
         self.mDelay.setValue(m["delay"])
+        self.mKey.setCurrentIndex(max(0, self.mKey.findData(m.get("key"))))
         self.macro_space()
 
     def macro_list(self, current=None):
         """Macros as stored, with the row being edited replaced by the editor contents."""
         ms = [dict(m) for m in self.cfg["macros"]]
         row = self.mlist.currentRow()
-        cur = {"name": self.mName.text() or "macro", "text": self.mText.toPlainText(), "delay": self.mDelay.value()}
+        cur = {"name": self.mName.text() or "macro", "text": self.mText.toPlainText(),
+               "delay": self.mDelay.value(), "key": self.mKey.currentData()}
         if 0 <= row < len(ms):
             ms[row] = cur
         else:
@@ -338,7 +346,12 @@ class Main(QMainWindow):
             self.say(self.t("m_full"))
             return
         macros = [(text_to_events(m["text"]), m["delay"]) for m in self.cfg["macros"]]
-        self.send(lambda: self.kb.write_macros(macros))
+        keys = {m["key"]: slot for slot, m in enumerate(self.cfg["macros"]) if m.get("key") is not None}
+
+        def go():
+            self.kb.write_macros(macros)
+            self.kb.write_keymap(keys)
+        self.send(go)
 
     def build_profiles(self):
         c = card()
@@ -369,7 +382,7 @@ class Main(QMainWindow):
         self.tabs.setTabText(1, self.t("tab_keys"))
         self.tabs.setTabText(2, self.t("tab_macros"))
         for w, k in ((self.mHint, "m_hint"), (self.lMName, "m_name"), (self.lMText, "m_text"),
-                     (self.lMDelay, "m_delay"), (self.lMSpace, "m_space"), (self.bMSave, "m_save"),
+                     (self.lMDelay, "m_delay"), (self.lMKey, "m_key"), (self.lMSpace, "m_space"), (self.bMSave, "m_save"),
                      (self.bMSend, "m_send"), (self.bMNew, "m_new"), (self.bMDel, "delete")):
             w.setText(self.t(k))
         for w, k in ((self.lEffect, "effect"), (self.lBright, "brightness"), (self.lSpeed, "speed"),
