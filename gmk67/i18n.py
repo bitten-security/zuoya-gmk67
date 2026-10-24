@@ -10,6 +10,11 @@ TEXT = {
            "fill_all": "Pintar todas", "clear_keys": "Apagar todas", "send": "Enviar ao teclado",
            "hint": "Clique nas teclas para selecionar (Ctrl para várias, arraste para uma faixa) e escolha a cor.",
            "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
+           "tab_funcs": "Funções", "f_keys": "Tecla do teclado", "f_media": "Multimídia",
+           "f_apply": "Atribuir às selecionadas", "f_reset": "Restaurar selecionadas",
+           "f_send": "Gravar no teclado",
+           "f_hint": "Selecione teclas, escolha a função e atribua (teclas azuis têm função própria). "
+                     "Gravar substitui o mapeamento do teclado; o app original também regrava o seu ao abrir.",
            "tab_macros": "Macros", "m_new": "Nova macro", "m_name": "Nome", "m_text": "Texto da macro",
            "knob_info": "Botão giratório: mostra o volume do Windows; clique (ou aperte o botão físico) alterna o mudo.",
            "m_delay": "Atraso entre teclas (ms)", "m_key": "Tecla que dispara a macro", "m_save": "Salvar macro", "m_send": "Gravar no teclado",
@@ -28,6 +33,10 @@ TEXT = {
            "fill_all": "Paint all", "clear_keys": "Turn all off", "send": "Send to keyboard",
            "hint": "Click keys to select (Ctrl for several, drag for a range) and pick a color.",
            "selected": "selected", "language": "Language", "palette": "Quick colors",
+           "tab_funcs": "Functions", "f_keys": "Keyboard key", "f_media": "Media",
+           "f_apply": "Assign to selected", "f_reset": "Restore selected", "f_send": "Write to keyboard",
+           "f_hint": "Select keys, pick the function and assign (blue keys have a custom function). "
+                     "Writing replaces the keyboard mapping; the original app also rewrites its own on start.",
            "tab_macros": "Macros", "m_new": "New macro", "m_name": "Name", "m_text": "Macro text",
            "knob_info": "Rotary knob: shows the Windows volume; click (or press the physical knob) toggles mute.",
            "m_delay": "Delay between keys (ms)", "m_key": "Key that triggers the macro", "m_save": "Save macro", "m_send": "Write to keyboard",
