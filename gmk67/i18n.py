@@ -11,7 +11,7 @@ TEXT = {
            "hint": "Clique nas teclas para selecionar (Ctrl para várias, arraste para uma faixa) e escolha a cor.",
            "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
            "tab_macros": "Macros", "m_new": "Nova macro", "m_name": "Nome", "m_text": "Texto da macro",
-           "knob_info": "Botão giratório: gira = volume +/-, aperta = mudo (função de fábrica; sem LED para pintar).",
+           "knob_info": "Botão giratório: mostra o volume do Windows; clique (ou aperte o botão físico) alterna o mudo.",
            "m_delay": "Atraso entre teclas (ms)", "m_key": "Tecla que dispara a macro", "m_save": "Salvar macro", "m_send": "Gravar no teclado",
            "m_space": "Espaço usado", "m_full": "Macros não cabem na memória do teclado",
            "m_hint": "Digite o texto; use {ENTER}, {TAB}, {ESC}, {CTRL}... para teclas especiais. "
@@ -29,7 +29,7 @@ TEXT = {
            "hint": "Click keys to select (Ctrl for several, drag for a range) and pick a color.",
            "selected": "selected", "language": "Language", "palette": "Quick colors",
            "tab_macros": "Macros", "m_new": "New macro", "m_name": "Name", "m_text": "Macro text",
-           "knob_info": "Rotary knob: turn = volume +/-, press = mute (factory function; no LED to paint).",
+           "knob_info": "Rotary knob: shows the Windows volume; click (or press the physical knob) toggles mute.",
            "m_delay": "Delay between keys (ms)", "m_key": "Key that triggers the macro", "m_save": "Save macro", "m_send": "Write to keyboard",
            "m_space": "Space used", "m_full": "Macros do not fit in the keyboard memory",
            "m_hint": "Type the text; use {ENTER}, {TAB}, {ESC}, {CTRL}... for special keys. "
