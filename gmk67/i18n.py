@@ -9,7 +9,12 @@ TEXT = {
            "sel_all": "Selecionar tudo", "sel_none": "Limpar seleção", "paint_sel": "Pintar selecionadas",
            "fill_all": "Pintar todas", "clear_keys": "Apagar todas", "send": "Enviar ao teclado",
            "hint": "Clique nas teclas para selecionar (Ctrl para várias, arraste para uma faixa) e escolha a cor.",
-           "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas"},
+           "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
+           "tab_macros": "Macros", "m_new": "Nova macro", "m_name": "Nome", "m_text": "Texto da macro",
+           "m_delay": "Atraso entre teclas (ms)", "m_save": "Salvar macro", "m_send": "Gravar no teclado",
+           "m_space": "Espaço usado", "m_full": "Macros não cabem na memória do teclado",
+           "m_hint": "Digite o texto; use {ENTER}, {TAB}, {ESC}, {CTRL}... para teclas especiais. "
+                     "A memória do teclado é pequena (cerca de 174 bytes)."},
     "en": {"title": "Zuoya GMK67", "subtitle": "RGB lighting control",
            "tab_fx": "Effects", "tab_keys": "Per key", "effect": "Effect", "brightness": "Brightness",
            "speed": "Speed", "random": "Random color / rainbow", "direction": "Direction",
@@ -20,5 +25,10 @@ TEXT = {
            "sel_all": "Select all", "sel_none": "Clear selection", "paint_sel": "Paint selected",
            "fill_all": "Paint all", "clear_keys": "Turn all off", "send": "Send to keyboard",
            "hint": "Click keys to select (Ctrl for several, drag for a range) and pick a color.",
-           "selected": "selected", "language": "Language", "palette": "Quick colors"},
+           "selected": "selected", "language": "Language", "palette": "Quick colors",
+           "tab_macros": "Macros", "m_new": "New macro", "m_name": "Name", "m_text": "Macro text",
+           "m_delay": "Delay between keys (ms)", "m_save": "Save macro", "m_send": "Write to keyboard",
+           "m_space": "Space used", "m_full": "Macros do not fit in the keyboard memory",
+           "m_hint": "Type the text; use {ENTER}, {TAB}, {ESC}, {CTRL}... for special keys. "
+                     "Keyboard memory is small (about 174 bytes)."},
 }
