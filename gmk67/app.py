@@ -186,6 +186,7 @@ class Main(QMainWindow):
         v.addWidget(self.hint)
         self.board = KeyboardWidget()
         self.board.selectionChanged.connect(self.sel_changed)
+        self.board.knobClicked.connect(lambda: self.say(self.t("knob_info")))
         v.addWidget(self.board, 1)
 
         row = QHBoxLayout()
