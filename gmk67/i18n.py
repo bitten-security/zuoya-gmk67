@@ -10,6 +10,7 @@ TEXT = {
            "fill_all": "Pintar todas", "clear_keys": "Apagar todas", "send": "Enviar ao teclado",
            "hint": "Clique nas teclas para selecionar (Ctrl para várias, arraste para uma faixa) e escolha a cor.",
            "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
+           "os_label": "Layout do sistema (troca Win/Alt como no Mac):",
            "tab_funcs": "Funções", "f_keys": "Tecla do teclado", "f_media": "Multimídia",
            "f_apply": "Atribuir às selecionadas", "f_reset": "Restaurar selecionadas",
            "f_send": "Gravar no teclado",
@@ -33,6 +34,7 @@ TEXT = {
            "fill_all": "Paint all", "clear_keys": "Turn all off", "send": "Send to keyboard",
            "hint": "Click keys to select (Ctrl for several, drag for a range) and pick a color.",
            "selected": "selected", "language": "Language", "palette": "Quick colors",
+           "os_label": "System layout (swaps Win/Alt like on a Mac):",
            "tab_funcs": "Functions", "f_keys": "Keyboard key", "f_media": "Media",
            "f_apply": "Assign to selected", "f_reset": "Restore selected", "f_send": "Write to keyboard",
            "f_hint": "Select keys, pick the function and assign (blue keys have a custom function). "
