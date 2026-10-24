@@ -533,6 +533,11 @@ class Main(QMainWindow):
                 self.rates = {r["kind"]: r["hz"] for r in polling_rates(VID, PID)}
             except Exception:
                 self.rates = {}
+        link = "usb" if c["usb"] else "dongle" if c["dongle"] else None
+        for b in (self.board, self.board2):
+            if b.link != link:
+                b.link = link
+                b.update()
         for chip, key, on in ((self.chipUsb, "usb", c["usb"]), (self.chipDongle, "dongle", c["dongle"])):
             hz = f" · {self.rates[key]} Hz" if on and key in self.rates else ""
             chip.setText(f"{self.t(key)}: {self.t('connected') if on else self.t('missing')}{hz}")

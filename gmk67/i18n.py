@@ -10,8 +10,8 @@ TEXT = {
            "fill_all": "Pintar todas", "clear_keys": "Apagar todas", "send": "Enviar ao teclado",
            "hint": "Clique nas teclas para selecionar (Ctrl para várias, arraste para uma faixa) e escolha a cor.",
            "selected": "selecionadas", "language": "Idioma", "palette": "Cores rápidas",
-           "led_info": "Luzes ao lado da Fn (bateria e luz): são indicadores do próprio teclado, "
-                       "não dá para ler nem alterar por software.",
+           "led_info": "Luzes ao lado da Fn: a de cima mostra o modo de conexão (branca em 2.4G), a de baixo é a "
+                       "bateria. São do próprio teclado; não dá para ler o nível nem alterar por software.",
            "os_label": "Layout do sistema (troca Win/Alt como no Mac):",
            "tab_funcs": "Funções", "f_keys": "Tecla do teclado", "f_media": "Multimídia",
            "f_apply": "Atribuir às selecionadas", "f_reset": "Restaurar selecionadas",
@@ -36,8 +36,8 @@ TEXT = {
            "fill_all": "Paint all", "clear_keys": "Turn all off", "send": "Send to keyboard",
            "hint": "Click keys to select (Ctrl for several, drag for a range) and pick a color.",
            "selected": "selected", "language": "Language", "palette": "Quick colors",
-           "led_info": "Lights beside Fn (battery and backlight): they belong to the keyboard itself, "
-                       "software can neither read nor change them.",
+           "led_info": "Lights beside Fn: the top one shows the connection mode (white on 2.4G), the bottom one is "
+                       "the battery. They belong to the keyboard; software can neither read the level nor change them.",
            "os_label": "System layout (swaps Win/Alt like on a Mac):",
            "tab_funcs": "Functions", "f_keys": "Keyboard key", "f_media": "Media",
            "f_apply": "Assign to selected", "f_reset": "Restore selected", "f_send": "Write to keyboard",

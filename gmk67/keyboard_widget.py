@@ -22,6 +22,7 @@ class KeyboardWidget(QWidget):
         super().__init__()
         self.keys = LAYOUT["keys"]
         self.knob_selected = False
+        self.link = None          # "usb" / "dongle" / None, set by the window
         self.volume = Volume()
         self.vol_state = self.volume.read()
         self._vol_timer = QTimer(self, interval=250)
@@ -105,15 +106,21 @@ class KeyboardWidget(QWidget):
         p.drawRoundedRect(strip, 5, 5)
         cx = strip.center().x()
         r = strip.width() * 0.22
-        p.setPen(QPen(QColor("#6b7488"), 1.4))
-        p.setBrush(Qt.NoBrush)
+        dim = QPen(QColor("#6b7488"), 1.4)
+        # top: mode/connection light, white while the keyboard runs on 2.4G (observed on the real keyboard)
+        on = self.link == "dongle"
         y1 = strip.top() + strip.height() * 0.30
-        body = QRectF(cx - r * 1.4, y1 - r * 0.9, r * 2.8, r * 1.8)           # battery glyph
-        p.drawRoundedRect(body, 1.5, 1.5)
-        p.drawLine(QPointF(body.right() + 1, y1 - r * 0.4), QPointF(body.right() + 1, y1 + r * 0.4))
+        p.setPen(QPen(QColor("#ffffff"), 1.4) if on else dim)
+        p.setBrush(QColor("#ffffff") if on else Qt.NoBrush)
+        p.drawEllipse(QPointF(cx, y1 - r * 0.2), r * 1.1, r * 1.1)             # bulb glyph
+        p.drawLine(QPointF(cx - r * 0.5, y1 + r * 1.3), QPointF(cx + r * 0.5, y1 + r * 1.3))
+        # bottom: battery (firmware only, level cannot be read)
         y2 = strip.top() + strip.height() * 0.72
-        p.drawEllipse(QPointF(cx, y2 - r * 0.2), r * 1.1, r * 1.1)             # bulb glyph
-        p.drawLine(QPointF(cx - r * 0.5, y2 + r * 1.3), QPointF(cx + r * 0.5, y2 + r * 1.3))
+        p.setPen(dim)
+        p.setBrush(Qt.NoBrush)
+        body = QRectF(cx - r * 1.4, y2 - r * 0.9, r * 2.8, r * 1.8)
+        p.drawRoundedRect(body, 1.5, 1.5)
+        p.drawLine(QPointF(body.right() + 1, y2 - r * 0.4), QPointF(body.right() + 1, y2 + r * 0.4))
 
     def _poll_volume(self):
         state = self.volume.read()
