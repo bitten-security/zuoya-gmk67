@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+run.err
+tools/hidlog*.txt
+tools/sniff.out
+tools/sniff.err
+tools/full.txt
+tools/probe2.out
