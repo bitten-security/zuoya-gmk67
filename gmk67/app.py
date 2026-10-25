@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QColorDialog, QComboBox,
                                QMenu, QPlainTextEdit, QProgressBar, QPushButton, QSlider, QSpinBox,
                                QSystemTrayIcon, QTabWidget, QVBoxLayout, QWidget)
 
+from . import __version__
 from .i18n import TEXT
 from .keyboard_widget import KeyboardWidget
 from .protocol import (EFFECTS, KEYS, MACRO_BASE, MACRO_END, MEDIA, MIN_DELAY_MS, PID, VID, Keyboard,
@@ -524,6 +525,10 @@ class Main(QMainWindow):
         self._quit = False
         self.tray = QSystemTrayIcon(app_icon(), self)
         menu = QMenu()
+        about = QAction(f"Zuoya GMK67 v{__version__}", self)
+        about.setEnabled(False)                       # version label at the top of the tray menu
+        menu.addAction(about)
+        menu.addSeparator()
         self.actOpen = QAction(self)
         self.actOpen.triggered.connect(self.show_window)
         self.actAuto = QAction(self, checkable=True)
@@ -536,7 +541,7 @@ class Main(QMainWindow):
         menu.addSeparator()
         menu.addAction(self.actQuit)
         self.tray.setContextMenu(menu)
-        self.tray.setToolTip("Zuoya GMK67")
+        self.tray.setToolTip(f"Zuoya GMK67 v{__version__}")
         self.tray.activated.connect(lambda r: self.show_window() if r == QSystemTrayIcon.Trigger else None)
         self.tray.show()
 
@@ -585,14 +590,14 @@ class Main(QMainWindow):
         self.actAuto.blockSignals(False)
 
     def retext(self):
-        self.setWindowTitle(self.t("title"))
+        self.setWindowTitle(f"{self.t('title')} v{__version__}")
         self.chkAuto.setText(self.t("autostart"))
         self.themeBox.setToolTip(self.t("theme"))
         self.actOpen.setText(self.t("tray_open"))
         self.actAuto.setText(self.t("autostart"))
         self.actQuit.setText(self.t("tray_quit"))
         self.title.setText(self.t("title"))
-        self.subtitle.setText(self.t("subtitle"))
+        self.subtitle.setText(f"{self.t('subtitle')} · v{__version__}")
         self.tabs.setTabText(0, self.t("tab_fx"))
         self.tabs.setTabText(1, self.t("tab_keys"))
         self.tabs.setTabText(2, self.t("tab_macros"))

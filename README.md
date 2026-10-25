@@ -27,7 +27,7 @@ Open-source replacement for the vendor driver of the **Zuoya GMK67** keyboard (U
 ## Install (Windows)
 
 Download `GMK67Control-Setup.exe` (installer) or `GMK67Control.exe` (portable) from the
-[Releases](../../releases) page. macOS is planned.
+[Releases](../../releases) page. macOS builds are experimental (see below).
 
 ## Install (macOS, experimental)
 
