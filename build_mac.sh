@@ -3,6 +3,7 @@
 set -euo pipefail
 ARCH="${1:-$(uname -m)}"
 cd "$(dirname "$0")"
+ROOT="$(pwd)"   # PyInstaller resolves data/icon paths against the .spec folder, so pass absolute paths
 
 # icon.icns from the PNG
 ICONSET=build_tmp/icon.iconset
@@ -14,8 +15,8 @@ done
 iconutil -c icns "$ICONSET" -o build_tmp/icon.icns
 
 python -m PyInstaller --noconfirm --clean --windowed --name "GMK67 Control" \
-  --icon build_tmp/icon.icns --osx-bundle-identifier io.github.gmk67control \
-  --add-data "gmk67/layout.json:gmk67" --add-data "gmk67/icon.png:gmk67" \
+  --icon "$ROOT/build_tmp/icon.icns" --osx-bundle-identifier io.github.gmk67control \
+  --add-data "$ROOT/gmk67/layout.json:gmk67" --add-data "$ROOT/gmk67/icon.png:gmk67" \
   --exclude-module PySide6.QtWebEngineCore --exclude-module PySide6.Qt3DCore \
   --distpath dist --workpath build_tmp --specpath build_tmp run.py
 
